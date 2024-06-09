@@ -1,15 +1,39 @@
-import { Container, Text, VStack, Heading, Box, Image, Link, Button } from "@chakra-ui/react";
-import { useEffect, useState } from "react";
+import { Container, Text, VStack, Heading, Box, Image, Link, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay } from "@chakra-ui/react";
+import { useEffect, useState, useRef } from "react";
 import { Link as RouterLink } from "react-router-dom";
 import { FaTwitter, FaGithub, FaLinkedin } from "react-icons/fa";
 
 const Index = () => {
   const [posts, setPosts] = useState([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const [postToDelete, setPostToDelete] = useState(null);
+  const onClose = () => setIsOpen(false);
+  const cancelRef = useRef();
+  const toast = useToast();
 
   useEffect(() => {
     const storedPosts = JSON.parse(localStorage.getItem("posts")) || [];
     setPosts(storedPosts);
   }, []);
+
+  const handleDelete = (post) => {
+    setPostToDelete(post);
+    setIsOpen(true);
+  };
+
+  const confirmDelete = () => {
+    const updatedPosts = posts.filter((p) => p !== postToDelete);
+    localStorage.setItem("posts", JSON.stringify(updatedPosts));
+    setPosts(updatedPosts);
+    setIsOpen(false);
+    toast({
+      title: "Post deleted.",
+      description: "The post has been deleted successfully.",
+      status: "success",
+      duration: 5000,
+      isClosable: true,
+    });
+  };
 
   return (
     <Container centerContent maxW="container.md" py={10}>
@@ -31,6 +55,9 @@ const Index = () => {
               <Heading fontSize="xl">{post.title}</Heading>
               {post.imageUrl && <Image src={post.imageUrl} alt={post.title} borderRadius="md" mb={4} />}
               <Text mt={4}>{post.content}</Text>
+              <Button colorScheme="red" mt={4} onClick={() => handleDelete(post)}>
+                Delete
+              </Button>
             </Box>
           ))}
         </Box>
@@ -51,6 +78,30 @@ const Index = () => {
           </VStack>
         </Box>
       </VStack>
+      <AlertDialog
+        isOpen={isOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={onClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Post
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure? You can't undo this action afterwards.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onClose}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={confirmDelete} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Container>
   );
 };
